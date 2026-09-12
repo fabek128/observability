@@ -52,7 +52,7 @@ No implementada por ser opcional. Queda pendiente para iteración posterior:
 ## Commits y Push
 | Repositorio | Commit | Rama |
 |-------------|--------|------|
-| `~/code/observability` | `c9b4b2b` | `origin/main` |
+| `~/code/observability` | `5c31db6` | `origin/main` |
 | `~/code/PromptGate` | `a9267e3` | `origin/master` |
 | `~/code/deployment/apps/mis-agentes` | `73a27b95d` | `origin/main` |
 
