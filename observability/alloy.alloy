@@ -1,0 +1,28 @@
+logging {
+  level = "info"
+}
+
+discovery.relabel "docker" {
+  targets = []
+  rule {
+    source_labels = ["__path__"]
+    regex         = "/var/lib/docker/containers/([^/]+)/.*"
+    target_label  = "container_id"
+  }
+}
+
+local.file_match "docker" {
+  path_targets = [{"__path__" = "/var/lib/docker/containers/*/*-json.log", "job" = "docker"}]
+}
+
+loki.source.file "docker" {
+  targets    = local.file_match.docker.targets
+  forward_to = [loki.write.default.receiver]
+  tail_from_end = true
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

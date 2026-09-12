@@ -1,0 +1,204 @@
+{
+  "folder": "PromptGate",
+  "title": "PromptGate \u2014 Gateway LLM",
+  "uid": "promptgate-gateway",
+  "tags": [
+    "promptgate",
+    "gateway"
+  ],
+  "timezone": "browser",
+  "panels": [
+    {
+      "title": "Logs por severidad (\u00faltima hora)",
+      "type": "table",
+      "datasource": "Loki",
+      "targets": [
+        {
+          "expr": "level=\"error\"",
+          "refId": "A",
+          "legendFormat": "error"
+        },
+        {
+          "expr": "level=\"warn\"",
+          "refId": "B",
+          "legendFormat": "warn"
+        },
+        {
+          "expr": "level=\"info\"",
+          "refId": "C",
+          "legendFormat": "info"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 6
+      }
+    },
+    {
+      "title": "Logs de request/response (PromptGate)",
+      "type": "logs",
+      "datasource": "Loki",
+      "targets": [
+        {
+          "expr": "container=\"promptgate\"",
+          "refId": "A",
+          "legendFormat": "promptgate"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Logs del worker",
+      "type": "logs",
+      "datasource": "Loki",
+      "targets": [
+        {
+          "expr": "container=\"promptgate-worker\"",
+          "refId": "A",
+          "legendFormat": "worker"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Logs del postgres",
+      "type": "logs",
+      "datasource": "Loki",
+      "targets": [
+        {
+          "expr": "container=\"promptgate-postgres\"",
+          "refId": "A",
+          "legendFormat": "postgres"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Health status",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "up{job=\"promptgate\"}",
+          "refId": "A",
+          "legendFormat": "promptgate"
+        }
+      ],
+      "gridPos": {
+        "x": 24,
+        "y": 0,
+        "w": 6,
+        "h": 6
+      }
+    },
+    {
+      "title": "HTTP requests rate",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "rate(http_requests_total{job=\"promptgate\"}[5m])",
+          "refId": "A",
+          "legendFormat": "{{method}} {{status_code}}"
+        }
+      ],
+      "gridPos": {
+        "x": 24,
+        "y": 6,
+        "w": 24,
+        "h": 8
+      }
+    },
+    {
+      "title": "Model selection count",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "increase(model_selection_total{job=\"promptgate\"}[1h])",
+          "refId": "A",
+          "legendFormat": "{{model}}"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 30,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Upstream errors",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "increase(upstream_errors_total{job=\"promptgate\"}[1h])",
+          "refId": "A",
+          "legendFormat": "{{error_type}}"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 30,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Tokens processed",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "increase(tokens_total{job=\"promptgate\"}[1h])",
+          "refId": "A",
+          "legendFormat": "{{direction}}"
+        }
+      ],
+      "gridPos": {
+        "x": 24,
+        "y": 30,
+        "w": 24,
+        "h": 8
+      }
+    }
+  ],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "refresh": "30s"
+}

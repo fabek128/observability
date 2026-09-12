@@ -1,0 +1,116 @@
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.120.0
+    user: "0:0"
+    command: ["--config=/etc/otelcol-contrib/config.yml"]
+    expose:
+      - "4317"
+      - "4318"
+      - "8889"
+    volumes:
+      - ./observability/otel-collector.yml:/etc/otelcol-contrib/config.yml:ro
+    restart: unless-stopped
+    networks:
+      - observability-net
+
+  tempo:
+    image: grafana/tempo:2.7.2
+    user: "0:0"
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    volumes:
+      - ./observability/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo-data:/var/tempo
+    expose:
+      - "3200"
+      - "4317"
+      - "4318"
+    restart: unless-stopped
+    networks:
+      - observability-net
+
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    user: "0:0"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-15d}"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "${PROMETHEUS_HOST_PORT:-9090}:9090"
+    depends_on:
+      otel-collector:
+        condition: service_started
+    networks:
+      - observability-net
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.4.2
+    user: "0:0"
+    command: ["-config.file=/etc/loki/loki.yml"]
+    volumes:
+      - ./observability/loki.yml:/etc/loki/loki.yml:ro
+      - loki-data:/loki
+    expose:
+      - "3100"
+    restart: unless-stopped
+    networks:
+      - observability-net
+
+  alloy:
+    image: grafana/alloy:v1.7.2
+    command: ["run", "/etc/alloy/config.alloy"]
+    volumes:
+      - ./observability/alloy.alloy:/etc/alloy/config.alloy:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      loki:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - observability-net
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    user: "0:0"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: ${GRAFANA_AUTH_ANONYMOUS_ENABLED:-false}
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-changeme}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "${GRAFANA_HOST_PORT:-3000}:3000"
+    depends_on:
+      prometheus:
+        condition: service_started
+      tempo:
+        condition: service_started
+      loki:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - observability-net
+
+networks:
+  default:
+    driver: bridge
+  observability-net:
+    external: true
+    name: observability-net
+
+volumes:
+  tempo-data:
+  prometheus-data:
+  loki-data:
+  grafana-data:
+
+secrets:
+  provider_secret_master_key:
+    file: ${PROVIDER_SECRET_MASTER_KEY_HOST_FILE:-./data/provider-secret-master-key}

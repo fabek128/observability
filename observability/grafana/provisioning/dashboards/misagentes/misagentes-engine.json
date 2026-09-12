@@ -1,0 +1,70 @@
+  "folder": "MisAgentes",
+  "title": "MisAgentes — Engine Multiagente",
+  "uid": "misagentes-engine",
+  "tags": ["misagentes", "engine"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "title": "Runs por estado",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "targets": [{"expr": "sum(ma_runs_total) by (status)", "legendFormat": "{{status}}"}],
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4}
+    },
+    {
+      "title": "Runs activos",
+      "type": "gauge",
+      "datasource": "Prometheus",
+      "targets": [{"expr": "sum(ma_runs_active) by (state)", "legendFormat": "{{state}}"}],
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4}
+    },
+    {
+      "title": "Steps por agente (última hora)",
+      "type": "bargauge",
+      "datasource": "Prometheus",
+      "targets": [{"expr": "sum(rate(ma_steps_total[1h])) by (agent)", "legendFormat": "{{agent}}"}],
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 6}
+    },
+    {
+      "title": "Latencia por agente (p50/p95)",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "histogram_quantile(0.50, sum(rate(ma_agent_latency_ms_bucket[5m])) by (le, agent))", "legendFormat": "p50 {{agent}}"},
+        {"expr": "histogram_quantile(0.95, sum(rate(ma_agent_latency_ms_bucket[5m])) by (le, agent))", "legendFormat": "p95 {{agent}}"}
+      ],
+      "gridPos": {"x": 0, "y": 10, "w": 12, "h": 6}
+    },
+    {
+      "title": "Transiciones de estado",
+      "type": "table",
+      "datasource": "Prometheus",
+      "targets": [{"expr": "sum(rate(ma_transitions_total[1h])) by (from_state, to_state)", "legendFormat": "{{from_state}} → {{to_state}}"}],
+      "gridPos": {"x": 0, "y": 16, "w": 12, "h": 6}
+    },
+    {
+      "title": "Reintentos y escalaciones",
+      "type": "bargauge",
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "sum(rate(ma_retries_total[1h])) by (agent)", "legendFormat": "retry {{agent}}"},
+        {"expr": "sum(rate(ma_escalations_total[1h])) by (agent)", "legendFormat": "escalation {{agent}}"}
+      ],
+      "gridPos": {"x": 0, "y": 22, "w": 12, "h": 6}
+    },
+    {
+      "title": "Gate de contexto (hits/miss/score)",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "sum(rate(ma_context_gate_total[5m])) by (result)", "legendFormat": "{{result}}"},
+        {"expr": "sum(rate(ma_context_gate_cache_total[5m])) by (result)", "legendFormat": "cache {{result}}"},
+        {"expr": "histogram_quantile(0.50, sum(rate(ma_context_gate_score_bucket[5m])) by (le))", "legendFormat": "score p50"},
+        {"expr": "histogram_quantile(0.95, sum(rate(ma_context_gate_score_bucket[5m])) by (le))", "legendFormat": "score p95"}
+      ],
+      "gridPos": {"x": 0, "y": 28, "w": 12, "h": 6}
+    }
+  ],
+  "time": {"from": "now-1h", "to": "now"},
+  "refresh": "30s"
+}
