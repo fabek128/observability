@@ -11,8 +11,9 @@ services:
       - ./observability/otel-collector.yml:/etc/otelcol-contrib/config.yml:ro
     restart: unless-stopped
     networks:
-      - observability-net
-
+      observability-net:
+        aliases:
+          - otel-collector
   tempo:
     image: grafana/tempo:2.7.2
     user: "0:0"
@@ -26,8 +27,9 @@ services:
       - "4318"
     restart: unless-stopped
     networks:
-      - observability-net
-
+      observability-net:
+        aliases:
+          - tempo
   prometheus:
     image: prom/prometheus:v3.2.1
     user: "0:0"
