@@ -1,0 +1,97 @@
+{
+  "title": "PromptGate — Operations & Errors",
+  "uid": "promptgate-operations",
+  "tags": ["promptgate", "operations", "errors", "sre"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "time": {"from": "now-6h", "to": "now"},
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Error rate HTTP",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "100 * sum(rate(http_requests_total{job=\"promptgate\",status_code=~\"5..\"}[5m])) / clamp_min(sum(rate(http_requests_total{job=\"promptgate\"}[5m])), 1e-9)", "legendFormat": "5xx"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "decimals": 2, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 1}, {"color": "red", "value": 5}]}}, "overrides": []},
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 5}
+    },
+    {
+      "id": 2,
+      "title": "Requests activas",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "max(http_server_active_requests{job=\"promptgate\"})", "legendFormat": "active"}],
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0}, "overrides": []},
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 5}
+    },
+    {
+      "id": 3,
+      "title": "Throughput por endpoint",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum(rate(http_requests_total{job=\"promptgate\"}[5m])) by (handler, method)", "legendFormat": "{{method}} {{handler}}"}],
+      "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"lineWidth": 2, "fillOpacity": 10, "showPoints": "never"}}, "overrides": []},
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8}
+    },
+    {
+      "id": 4,
+      "title": "Distribución de estados HTTP",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum(rate(http_requests_total{job=\"promptgate\"}[5m])) by (status_code)", "legendFormat": "HTTP {{status_code}}"}],
+      "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"lineWidth": 2, "fillOpacity": 10, "showPoints": "never"}}, "overrides": []},
+      "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8}
+    },
+    {
+      "id": 5,
+      "title": "Latencia p50 / p95 por endpoint",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"refId": "A", "expr": "histogram_quantile(0.50, sum by (le, handler) (rate(http_request_duration_seconds_bucket{job=\"promptgate\"}[5m])))", "legendFormat": "p50 {{handler}}"},
+        {"refId": "B", "expr": "histogram_quantile(0.95, sum by (le, handler) (rate(http_request_duration_seconds_bucket{job=\"promptgate\"}[5m])))", "legendFormat": "p95 {{handler}}"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s", "custom": {"lineWidth": 2, "fillOpacity": 7, "showPoints": "never"}}, "overrides": []},
+      "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8}
+    },
+    {
+      "id": 6,
+      "title": "CPU del proceso",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "rate(process_cpu_seconds_total{job=\"promptgate\"}[5m]) * 100", "legendFormat": "CPU %"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "custom": {"lineWidth": 2, "fillOpacity": 10, "showPoints": "never"}}, "overrides": []},
+      "gridPos": {"x": 0, "y": 16, "w": 8, "h": 7}
+    },
+    {
+      "id": 7,
+      "title": "Memoria residente",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "process_resident_memory_bytes{job=\"promptgate\"}", "legendFormat": "RSS"}],
+      "fieldConfig": {"defaults": {"unit": "bytes", "custom": {"lineWidth": 2, "fillOpacity": 10, "showPoints": "never"}}, "overrides": []},
+      "gridPos": {"x": 8, "y": 16, "w": 8, "h": 7}
+    },
+    {
+      "id": 8,
+      "title": "Logs de errores PromptGate",
+      "type": "logs",
+      "datasource": {"type": "loki", "uid": "loki"},
+      "targets": [{"refId": "A", "expr": "{job=\"docker\"} |= \"promptgate\" |~ \"ERROR|Error|WARNING|Warning|Traceback\""}],
+      "options": {"showTime": true, "showLabels": true, "sortOrder": "Descending"},
+      "gridPos": {"x": 16, "y": 16, "w": 8, "h": 7}
+    },
+    {
+      "id": 9,
+      "title": "Model resolutions con fallo",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum(rate(promptgate_model_resolution_total{exported_job=\"promptgate\",outcome!=\"selected\"}[5m])) by (model_type, outcome, error_type)", "legendFormat": "{{model_type}} — {{outcome}} — {{error_type}}"}],
+      "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"lineWidth": 2, "fillOpacity": 12, "showPoints": "never"}}, "overrides": []},
+      "gridPos": {"x": 0, "y": 23, "w": 24, "h": 8}
+    }
+  ]
+}

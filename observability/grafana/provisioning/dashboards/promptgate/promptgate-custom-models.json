@@ -1,0 +1,102 @@
+{
+  "title": "PromptGate — Custom Models",
+  "uid": "promptgate-custom-models",
+  "tags": ["promptgate", "custom-models", "routing"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "time": {"from": "now-24h", "to": "now"},
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "requested_model",
+        "label": "Custom model",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "definition": "label_values(promptgate_model_resolution_total{exported_job=\"promptgate\",model_type=\"custom\"}, requested_model)",
+        "query": "label_values(promptgate_model_resolution_total{exported_job=\"promptgate\",model_type=\"custom\"}, requested_model)",
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "refresh": 1,
+        "sort": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Resoluciones custom",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum(increase(promptgate_model_resolution_total{exported_job=\"promptgate\",model_type=\"custom\",requested_model=~\"$requested_model\"}[$__range]))", "legendFormat": "resolutions"}],
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0}, "overrides": []},
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 5}
+    },
+    {
+      "id": 2,
+      "title": "Custom models por resultado",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum(rate(promptgate_model_resolution_total{exported_job=\"promptgate\",model_type=\"custom\",requested_model=~\"$requested_model\"}[5m])) by (requested_model, outcome)", "legendFormat": "{{requested_model}} — {{outcome}}"}],
+      "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"lineWidth": 2, "fillOpacity": 12, "showPoints": "never"}}, "overrides": []},
+      "gridPos": {"x": 6, "y": 0, "w": 18, "h": 8}
+    },
+    {
+      "id": 3,
+      "title": "Routing efectivo",
+      "type": "table",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum by (requested_model, selected_model, upstream, outcome) (increase(promptgate_model_resolution_total{exported_job=\"promptgate\",model_type=\"custom\",requested_model=~\"$requested_model\"}[$__range]))", "format": "table", "instant": true}],
+      "transformations": [{"id": "organize", "options": {"excludeByName": {"Time": true, "Value": true, "job": true, "exported_job": true, "exported_instance": true, "instance": true}, "indexByName": {"requested_model": 0, "selected_model": 1, "upstream": 2, "outcome": 3}, "renameByName": {"requested_model": "Custom model", "selected_model": "Selected model", "upstream": "Upstream", "outcome": "Outcome"}}}],
+      "gridPos": {"x": 0, "y": 8, "w": 14, "h": 8}
+    },
+    {
+      "id": 4,
+      "title": "Fallos de resolución",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum(rate(promptgate_model_resolution_total{exported_job=\"promptgate\",model_type=\"custom\",requested_model=~\"$requested_model\",outcome!=\"selected\"}[5m])) by (requested_model, outcome, error_type)", "legendFormat": "{{requested_model}} — {{outcome}} — {{error_type}}"}],
+      "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"lineWidth": 2, "fillOpacity": 12, "showPoints": "never"}}, "overrides": []},
+      "gridPos": {"x": 14, "y": 8, "w": 10, "h": 8}
+    },
+    {
+      "id": 5,
+      "title": "Capabilities por candidato",
+      "type": "table",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum by (requested_model, candidate_model, capability, state, compatible) (increase(promptgate_model_capability_total{exported_job=\"promptgate\",requested_model=~\"$requested_model\"}[$__range]))", "format": "table", "instant": true}],
+      "transformations": [{"id": "organize", "options": {"excludeByName": {"Time": true, "Value": true, "job": true, "exported_job": true, "exported_instance": true, "instance": true, "operation": true, "preset_mode": true, "required": true, "allowed": true, "source": true}, "indexByName": {"requested_model": 0, "candidate_model": 1, "capability": 2, "state": 3, "compatible": 4}, "renameByName": {"requested_model": "Custom model", "candidate_model": "Candidate", "capability": "Capability", "state": "State", "compatible": "Compatible"}}}],
+      "gridPos": {"x": 0, "y": 16, "w": 24, "h": 10}
+    },
+    {
+      "id": 6,
+      "title": "Estado de capabilities",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum(rate(promptgate_model_capability_total{exported_job=\"promptgate\",requested_model=~\"$requested_model\"}[5m])) by (capability, state)", "legendFormat": "{{capability}} — {{state}}"}],
+      "fieldConfig": {"defaults": {"unit": "ops", "custom": {"lineWidth": 2, "fillOpacity": 10, "showPoints": "never"}}, "overrides": []},
+      "gridPos": {"x": 0, "y": 26, "w": 12, "h": 8}
+    },
+    {
+      "id": 7,
+      "title": "Candidatos observados",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "count(count by (candidate_model) (promptgate_model_capability_total{exported_job=\"promptgate\",requested_model=~\"$requested_model\"}))", "legendFormat": "candidates"}],
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0}, "overrides": []},
+      "gridPos": {"x": 12, "y": 26, "w": 6, "h": 8}
+    },
+    {
+      "id": 8,
+      "title": "Requests a endpoints de custom models",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum(rate(http_requests_total{job=\"promptgate\",handler=~\"/v1/chat/completions|/v1/admin/custom-models.*\"}[5m])) by (handler, method, status_code)", "legendFormat": "{{method}} {{handler}} — {{status_code}}"}],
+      "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"lineWidth": 2, "fillOpacity": 10, "showPoints": "never"}}, "overrides": []},
+      "gridPos": {"x": 18, "y": 26, "w": 6, "h": 8}
+    }
+  ]
+}

@@ -1,204 +1,97 @@
 {
-  "folder": "PromptGate",
-  "title": "PromptGate \u2014 Gateway LLM",
+  "title": "PromptGate — Overview",
   "uid": "promptgate-gateway",
-  "tags": [
-    "promptgate",
-    "gateway"
-  ],
+  "tags": ["promptgate", "gateway", "llm"],
   "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 2,
+  "editable": false,
+  "time": {"from": "now-6h", "to": "now"},
+  "refresh": "30s",
   "panels": [
     {
-      "title": "Logs por severidad (\u00faltima hora)",
-      "type": "table",
-      "datasource": "Loki",
-      "targets": [
-        {
-          "expr": "level=\"error\"",
-          "refId": "A",
-          "legendFormat": "error"
-        },
-        {
-          "expr": "level=\"warn\"",
-          "refId": "B",
-          "legendFormat": "warn"
-        },
-        {
-          "expr": "level=\"info\"",
-          "refId": "C",
-          "legendFormat": "info"
-        }
-      ],
-      "gridPos": {
-        "x": 0,
-        "y": 0,
-        "w": 12,
-        "h": 6
-      }
-    },
-    {
-      "title": "Logs de request/response (PromptGate)",
-      "type": "logs",
-      "datasource": "Loki",
-      "targets": [
-        {
-          "expr": "container=\"promptgate\"",
-          "refId": "A",
-          "legendFormat": "promptgate"
-        }
-      ],
-      "gridPos": {
-        "x": 0,
-        "y": 6,
-        "w": 12,
-        "h": 8
-      }
-    },
-    {
-      "title": "Logs del worker",
-      "type": "logs",
-      "datasource": "Loki",
-      "targets": [
-        {
-          "expr": "container=\"promptgate-worker\"",
-          "refId": "A",
-          "legendFormat": "worker"
-        }
-      ],
-      "gridPos": {
-        "x": 0,
-        "y": 14,
-        "w": 12,
-        "h": 8
-      }
-    },
-    {
-      "title": "Logs del postgres",
-      "type": "logs",
-      "datasource": "Loki",
-      "targets": [
-        {
-          "expr": "container=\"promptgate-postgres\"",
-          "refId": "A",
-          "legendFormat": "postgres"
-        }
-      ],
-      "gridPos": {
-        "x": 0,
-        "y": 22,
-        "w": 12,
-        "h": 8
-      }
-    },
-    {
-      "title": "Health status",
+      "id": 1,
+      "title": "PromptGate disponible",
       "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "targets": [
-        {
-          "expr": "up{job=\"promptgate\"}",
-          "refId": "A",
-          "legendFormat": "promptgate"
-        }
-      ],
-      "gridPos": {
-        "x": 24,
-        "y": 0,
-        "w": 6,
-        "h": 6
-      }
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "max(up{job=\"promptgate\"})", "legendFormat": "up"}],
+      "fieldConfig": {"defaults": {"unit": "short", "mappings": [{"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "UP", "color": "green"}}}]}, "overrides": []},
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 5}
     },
     {
-      "title": "HTTP requests rate",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "targets": [
-        {
-          "expr": "rate(http_requests_total{job=\"promptgate\"}[5m])",
-          "refId": "A",
-          "legendFormat": "{{method}} {{status_code}}"
-        }
-      ],
-      "gridPos": {
-        "x": 24,
-        "y": 6,
-        "w": 24,
-        "h": 8
-      }
+      "id": 2,
+      "title": "Requests por segundo",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum(rate(http_requests_total{job=\"promptgate\"}[5m]))", "legendFormat": "req/s"}],
+      "fieldConfig": {"defaults": {"unit": "reqps", "decimals": 2}, "overrides": []},
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 5}
     },
     {
-      "title": "Model selection count",
+      "id": 3,
+      "title": "Requests HTTP por ruta y estado",
       "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "targets": [
-        {
-          "expr": "increase(model_selection_total{job=\"promptgate\"}[1h])",
-          "refId": "A",
-          "legendFormat": "{{model}}"
-        }
-      ],
-      "gridPos": {
-        "x": 0,
-        "y": 30,
-        "w": 12,
-        "h": 8
-      }
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum(rate(http_requests_total{job=\"promptgate\"}[5m])) by (handler, method, status_code)", "legendFormat": "{{method}} {{handler}} — {{status_code}}"}],
+      "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"lineWidth": 1, "fillOpacity": 10, "showPoints": "never"}}, "overrides": []},
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8}
     },
     {
-      "title": "Upstream errors",
+      "id": 4,
+      "title": "Latencia HTTP p50 / p95",
       "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {
-          "expr": "increase(upstream_errors_total{job=\"promptgate\"}[1h])",
-          "refId": "A",
-          "legendFormat": "{{error_type}}"
-        }
+        {"refId": "A", "expr": "histogram_quantile(0.50, sum by (le, handler) (rate(http_request_duration_seconds_bucket{job=\"promptgate\"}[5m])))", "legendFormat": "p50 {{handler}}"},
+        {"refId": "B", "expr": "histogram_quantile(0.95, sum by (le, handler) (rate(http_request_duration_seconds_bucket{job=\"promptgate\"}[5m])))", "legendFormat": "p95 {{handler}}"}
       ],
-      "gridPos": {
-        "x": 12,
-        "y": 30,
-        "w": 12,
-        "h": 8
-      }
+      "fieldConfig": {"defaults": {"unit": "s", "custom": {"lineWidth": 2, "fillOpacity": 5, "showPoints": "never"}}, "overrides": []},
+      "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8}
     },
     {
-      "title": "Tokens processed",
+      "id": 5,
+      "title": "Errores HTTP",
       "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "targets": [
-        {
-          "expr": "increase(tokens_total{job=\"promptgate\"}[1h])",
-          "refId": "A",
-          "legendFormat": "{{direction}}"
-        }
-      ],
-      "gridPos": {
-        "x": 24,
-        "y": 30,
-        "w": 24,
-        "h": 8
-      }
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum(rate(http_requests_total{job=\"promptgate\",status_code=~\"4..|5..\"}[5m])) by (status_code)", "legendFormat": "HTTP {{status_code}}"}],
+      "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"lineWidth": 2, "fillOpacity": 15, "showPoints": "never"}}, "overrides": []},
+      "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8}
+    },
+    {
+      "id": 6,
+      "title": "Requests activas",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "http_server_active_requests{job=\"promptgate\"}", "legendFormat": "active"}],
+      "fieldConfig": {"defaults": {"unit": "short", "custom": {"lineWidth": 2, "fillOpacity": 10, "showPoints": "never"}}, "overrides": []},
+      "gridPos": {"x": 0, "y": 16, "w": 8, "h": 7}
+    },
+    {
+      "id": 7,
+      "title": "Memoria residente",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "process_resident_memory_bytes{job=\"promptgate\"}", "legendFormat": "PromptGate"}],
+      "fieldConfig": {"defaults": {"unit": "bytes", "custom": {"lineWidth": 2, "fillOpacity": 10, "showPoints": "never"}}, "overrides": []},
+      "gridPos": {"x": 8, "y": 16, "w": 8, "h": 7}
+    },
+    {
+      "id": 8,
+      "title": "Resoluciones de modelos custom",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum(rate(promptgate_model_resolution_total{exported_job=\"promptgate\",model_type=\"custom\"}[5m])) by (requested_model, outcome)", "legendFormat": "{{requested_model}} — {{outcome}}"}],
+      "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"lineWidth": 2, "fillOpacity": 10, "showPoints": "never"}}, "overrides": []},
+      "gridPos": {"x": 16, "y": 16, "w": 8, "h": 7}
+    },
+    {
+      "id": 9,
+      "title": "Logs recientes de PromptGate",
+      "type": "logs",
+      "datasource": {"type": "loki", "uid": "loki"},
+      "targets": [{"refId": "A", "expr": "{job=\"docker\"} |= \"promptgate\""}],
+      "options": {"showTime": true, "showLabels": true, "sortOrder": "Descending"},
+      "gridPos": {"x": 0, "y": 23, "w": 24, "h": 9}
     }
-  ],
-  "time": {
-    "from": "now-1h",
-    "to": "now"
-  },
-  "refresh": "30s"
+  ]
 }
